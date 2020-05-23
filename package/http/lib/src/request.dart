@@ -1,9 +1,54 @@
 import 'dart:io';
 
-import 'package:http/http.dart';
 import 'package:ok_http/src/request_body.dart';
 import 'package:quiver/collection.dart';
+import 'cache_control.dart';
 import 'internal/http_method.dart';
+
+class Request {
+  Request._(
+    RequestBuilder builder,
+  )   : _url = builder._url,
+        _method = builder._method,
+        _headers = builder._headers,
+        _body = builder._body;
+
+  final Uri _url;
+  final String _method;
+  final Multimap _headers;
+  final RequestBody _body;
+
+  CacheControl _cacheControl;
+
+  Uri get url {
+    return _url;
+  }
+
+  String get method {
+    return _method;
+  }
+
+  String header(String name) {
+    return _headers[name].first;
+  }
+
+  List<String> headers(String name) {
+    return _headers[name].toList();
+  }
+
+  /// Returns the cache control directives for this response. This is never null, even if this
+  /// response contains no `Cache-Control` header.
+  CacheControl get cacheControl =>
+      _cacheControl ??= CacheControl.parse(_headers);
+
+  RequestBody get body {
+    return _body;
+  }
+
+  RequestBuilder newBuilder() {
+    return RequestBuilder._(this);
+  }
+}
 
 class RequestBuilder {
   Uri _url;
@@ -14,6 +59,13 @@ class RequestBuilder {
   RequestBuilder()
       : _method = HttpMethod.get,
         _headers = Multimap();
+
+  RequestBuilder._(
+    Request request,
+  )   : _url = request._url,
+        _method = request._method,
+        _headers = request._headers,
+        _body = request._body;
 
   RequestBuilder url(Uri value) {
     _url = value;
@@ -42,7 +94,7 @@ class RequestBuilder {
   }
 
   RequestBuilder cacheControl(CacheControl cacheControl) {
-    String value = cacheControl?.toString() ?? '';
+    var value = cacheControl?.toString() ?? '';
     if (value.isEmpty) {
       return removeHeader(HttpHeaders.cacheControlHeader);
     }

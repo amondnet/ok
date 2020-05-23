@@ -20,9 +20,9 @@ jobs:
         working-directory: package/${{ matrix.package }}
         run: pub get
 
-      - name: Analyze
-        working-directory: package/${{ matrix.package }}
-        run: dartanalyzer --fatal-infos --fatal-warnings .
+      #- name: Analyze
+      #  working-directory: package/${{ matrix.package }}
+      #  run: dartanalyzer --fatal-infos --fatal-warnings .
 
       - name: Run tests
         working-directory: package/${{ matrix.package }}

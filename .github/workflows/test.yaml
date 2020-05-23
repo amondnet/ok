@@ -30,6 +30,8 @@ jobs:
           pub run build_runner build
           pub run test
           pub run test_coverage --badge false
+          pub run remove_from_coverage -f coverage/lcov.info -r '.freezed.dart$'
+
       - name: Upload coverage to codecov
         uses: codecov/codecov-action@v1
         with:

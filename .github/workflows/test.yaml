@@ -30,9 +30,8 @@ jobs:
           pub run test
           pub run test_coverage --badge false
       - name: Upload coverage to codecov
-        working-directory: package/${{ matrix.package }}
         uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: ${{ matrix.package }}
-          file: ./${{ matrix.package }}/coverage/lcov.info
+          file: ./package/${{ matrix.package }}/coverage/lcov.info

@@ -1,6 +1,6 @@
-import 'package:http/http.dart';
-
 import 'call.dart';
+import 'request.dart';
+import 'response.dart';
 
 abstract class Interceptor {
   Future<Response> intercept(Chain change);

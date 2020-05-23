@@ -1,13 +1,12 @@
 import 'dart:convert';
 
-import 'package:http_parser/http_parser.dart';
-import '../media_type.dart';
+import '../media_types.dart';
 
 class Encoder {
   Encoder._();
 
-  static Encoding encoding(MediaType contentTYpe,
+  static Encoding encoding(MediaTypes contentType,
       [Encoding defaultValue = utf8]) {
-    return Encoding.getByName(contentTYpe?.charset ?? 'utf-8');
+    return Encoding.getByName(contentType?.charset()) ?? defaultValue;
   }
 }

@@ -12,7 +12,7 @@ void main() {
   Angel app;
   AngelHttp http;
   AngelHttp2 http2;
-  OkHttpClient client;
+  Http2Client client;
   Uri baseUrl, httpUrl;
 
   setUp(() async {
@@ -50,7 +50,7 @@ void main() {
     httpUrl = http.uri;
     print('Listening at $baseUrl');
 
-    client = OkHttpClient(
+    client = Http2Client(
       onBadCertificate: (_) => true,
     );
   });

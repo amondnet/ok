@@ -1,3 +1,7 @@
+import 'dart:async';
+
+import 'dart:convert';
+
 extension StringExtenstions on String {
   /// Returns the index of the next non-whitespace character in this. Result is undefined if input
   /// contains newline characters.
@@ -10,4 +14,18 @@ extension StringExtenstions on String {
     }
     return length;
   }
+}
+
+Future<List<int>> readAsBytes(Stream<List<int>> source) {
+  var completer = Completer<List<int>>();
+  var sink = ByteConversionSink.withCallback((List<int> accumulated) {
+    completer.complete(accumulated);
+  });
+  source.listen(
+    sink.add,
+    onError: completer.completeError,
+    onDone: sink.close,
+    cancelOnError: true,
+  );
+  return completer.future;
 }

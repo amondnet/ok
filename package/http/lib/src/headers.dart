@@ -1,6 +1,9 @@
 import 'dart:collection';
-
+import 'dart:convert';
+import 'package:convert/convert.dart';
+import 'package:quiver/check.dart';
 import 'package:quiver/collection.dart';
+import 'package:quiver/strings.dart';
 
 class Headers implements Multimap<String, String> {
   Headers._(this._namesAndValues);
@@ -60,6 +63,14 @@ class Headers implements Multimap<String, String> {
 
   @override
   void add(key, value) {
+    _checkName(key);
+    checkNotNull(key);
+    checkNotNull(value);
+    checkArgument(isNotBlank(key));
+    checkArgument(isNotBlank(value));
+    checkArgument(!key.contains('\t'));
+    _checkValue(value);
+
     _namesAndValues.add(key, value);
   }
 
@@ -132,6 +143,30 @@ class Headers implements Multimap<String, String> {
 
   @override
   Iterable<String> get values => _namesAndValues.values;
+
+  HeadersBuilder newBuilder() {
+    return HeadersBuilder._(this);
+  }
+
+  Map<String, String> toMap() {
+    return asMap().map((key, value) => MapEntry(key, value.join(', ')));
+  }
+
+  void _checkName(String name) {
+    checkArgument(name.isNotEmpty, message: 'name is empty');
+    checkArgument(_codeCheck(name, 33, 126));
+  }
+
+  void _checkValue(String name) {
+    checkArgument(name.isNotEmpty, message: 'name is empty');
+    checkArgument(_codeCheck(name, 32, 126) || name.contains('\t'));
+  }
+
+  bool _codeCheck(String text, int start, int end) {
+    return text.codeUnits.every((ch) {
+      return ch <= end && ch >= start;
+    });
+  }
 }
 
 class HeadersBuilder {

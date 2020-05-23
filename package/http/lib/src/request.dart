@@ -1,8 +1,11 @@
 import 'dart:io';
 
 import 'package:ok_http/src/request_body.dart';
+import 'package:quiver/check.dart';
 import 'package:quiver/collection.dart';
+import 'package:quiver/strings.dart';
 import 'cache_control.dart';
+import 'headers.dart';
 import 'internal/http_method.dart';
 
 class Request {
@@ -15,7 +18,7 @@ class Request {
 
   final Uri _url;
   final String _method;
-  final Multimap _headers;
+  final Headers _headers;
   final RequestBody _body;
 
   CacheControl _cacheControl;
@@ -29,11 +32,13 @@ class Request {
   }
 
   String header(String name) {
-    return _headers[name].first;
+    return _headers[name.toLowerCase()].first;
   }
 
-  List<String> headers(String name) {
-    return _headers[name].toList();
+  Headers get headers => _headers;
+
+  List<String> headersByName(String name) {
+    return _headers[name.toLowerCase()].toList();
   }
 
   /// Returns the cache control directives for this response. This is never null, even if this
@@ -48,17 +53,21 @@ class Request {
   RequestBuilder newBuilder() {
     return RequestBuilder._(this);
   }
+
+  static RequestBuilder builder() {
+    return RequestBuilder();
+  }
 }
 
 class RequestBuilder {
   Uri _url;
-  String _method;
-  Multimap<String, String> _headers;
+  String _method = HttpMethod.get;
+  Headers _headers;
   RequestBody _body;
 
   RequestBuilder()
       : _method = HttpMethod.get,
-        _headers = Multimap();
+        _headers = Headers.fromMap({});
 
   RequestBuilder._(
     Request request,
@@ -67,18 +76,34 @@ class RequestBuilder {
         _headers = request._headers,
         _body = request._body;
 
-  RequestBuilder url(Uri value) {
+  RequestBuilder uri(Uri value) {
     _url = value;
     return this;
   }
 
+  RequestBuilder url(String url) {
+    checkNotNull(url);
+    checkArgument(isNotBlank(url));
+
+    _url = Uri.parse(url);
+    return this;
+  }
+
   RequestBuilder header(String name, String value) {
+    checkNotNull(name);
+    checkArgument(isNotBlank(name));
     _headers.removeAll(name);
     _headers.add(name, value);
     return this;
   }
 
   RequestBuilder addHeader(String name, String value) {
+    checkNotNull(name);
+    checkNotNull(value);
+
+    checkArgument(isNotBlank(name));
+    checkArgument(isNotBlank(value));
+
     _headers.add(name, value);
     return this;
   }

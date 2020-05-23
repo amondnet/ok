@@ -4,7 +4,7 @@ import 'package:logging/logging.dart';
 import 'package:ok_http/ok_http.dart';
 
 void main() async {
-  var client = OkHttpClient(maxOpenConnections: 1);
+  var client = Http2Client(maxOpenConnections: 1);
   Logger.root.level = Level.ALL; // defaults to Level.INFO
   Logger.root.onRecord.listen((record) {
     print('${record.level.name}: ${record.time}: ${record.message}');

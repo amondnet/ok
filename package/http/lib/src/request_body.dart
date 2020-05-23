@@ -2,23 +2,26 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http_parser/http_parser.dart';
+import 'package:quiver/check.dart';
 
 import 'internal/encoder.dart';
+import 'media_types.dart';
 
 abstract class RequestBody {
-  MediaType contentType();
+  MediaTypes get contentType;
 
-  int contentLength();
+  int get contentLength;
 
   Stream<List<int>> source();
 
-  static RequestBody bytesBody(MediaType contentType, List<int> bytes) {
-    assert(bytes != null);
+  static RequestBody bytesBody(MediaType contentType, List<int> bytes,
+      [int offset = 0, int byteCount]) {
+    checkNotNull(bytes);
     return _SimpleRequestBody(contentType, bytes.length, bytes);
   }
 
   static RequestBody textBody(MediaType contentType, String text) {
-    assert(text != null);
+    checkNotNull(text);
     var encoding = Encoder.encoding(contentType);
     return bytesBody(contentType, encoding.encode(text));
   }
@@ -37,17 +40,17 @@ class _SimpleRequestBody extends RequestBody {
         _contentLength = contentLength,
         _bytes = bytes;
 
-  final MediaType _contentType;
+  final MediaTypes _contentType;
   final int _contentLength;
   final List<int> _bytes;
 
   @override
-  MediaType contentType() {
+  MediaTypes get contentType {
     return _contentType;
   }
 
   @override
-  int contentLength() {
+  int get contentLength {
     return _contentLength;
   }
 
@@ -64,16 +67,16 @@ class _FileRequestBody extends RequestBody {
   )   : _contentType = contentType,
         _file = file;
 
-  final MediaType _contentType;
+  final MediaTypes _contentType;
   final File _file;
 
   @override
-  MediaType contentType() {
+  MediaTypes get contentType {
     return _contentType;
   }
 
   @override
-  int contentLength() {
+  int get contentLength {
     return _file.lengthSync();
   }
 

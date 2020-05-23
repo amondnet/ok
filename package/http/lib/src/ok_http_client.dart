@@ -1,414 +1,214 @@
-import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
-import 'package:http/http.dart';
-import 'package:http/io_client.dart';
-import 'package:http2/http2.dart';
-import 'package:http_parser/http_parser.dart';
-import 'package:logging/logging.dart';
-import 'package:tuple/tuple.dart';
-
-import 'authenticator.dart';
+import 'cache.dart';
+import 'call.dart';
+import 'cookie_jar.dart';
 import 'interceptor.dart';
+import 'internal/cookie_jar.dart';
+import 'proxy.dart';
+import 'request.dart';
 
-final log = Logger('OkHttpClient');
+class OkHttpClient {
+  OkHttpClient._(
+    List<Interceptor> interceptors,
+    List<Interceptor> networkInterceptors,
+    SecurityContext securityContext,
+    Proxy proxy,
+    ProxySelector proxySelector,
+    CookieJar cookieJar,
+    Cache cache,
+    bool followRedirects,
+    int maxRedirects,
+    Duration idleTimeout,
+    Duration connectionTimeout,
+  )   : _interceptors = interceptors,
+        _networkInterceptors = networkInterceptors,
+        _securityContext = securityContext,
+        _proxy = proxy,
+        _proxySelector = proxySelector,
+        _cookieJar = cookieJar,
+        _cache = cache,
+        _followRedirects = followRedirects,
+        _maxRedirects = maxRedirects,
+        _idleTimeout = idleTimeout,
+        _connectionTimeout = connectionTimeout;
 
-class OkHttpClient extends BaseClient {
-  /// A [BaseClient] that will handle connections to servers which do not
-  /// support HTTP/2.
-  ///
-  /// Defaults to [IOClient].
-  final BaseClient http1Client;
+  final List<Interceptor> _interceptors;
+  final List<Interceptor> _networkInterceptors;
 
-  /// If `true` (default), automatically decodes `gzip` and `deflate` bodies.
-  final bool autoUncompress;
+  final SecurityContext _securityContext;
+  final Proxy _proxy;
+  final ProxySelector _proxySelector;
 
-  /// Whether to keep sockets used for HTTP/2 connections open.
-  ///
-  /// If `true` (default), then all created [SecureSocket]s will remain
-  /// open, until [close] is called.
-  final bool maintainOpenConnections;
+  final CookieJar _cookieJar;
+  final Cache _cache;
 
-  /// The maximum number of connections to keep open at a time,
-  /// or `-1`, in which case there will be no limit.
-  ///
-  /// Defaults to `-1`.
-  final int maxOpenConnections;
+  final bool _followRedirects;
+  final int _maxRedirects;
 
-  /// Handler triggered when an attempt to connect a [SecureSocket] encounters
-  /// an invalid [X509Certificate].
-  final bool Function(X509Certificate) onBadCertificate;
+  final Duration _idleTimeout;
+  final Duration _connectionTimeout;
 
-  /// A [SecurityContext] to be passed to every [SecureSocket].
-  final SecurityContext context;
-
-  /// An optional timeout to limit the time spent on connections.
-  final Duration timeout;
-
-  final Map<String, ClientTransportConnection> _sockets = {};
-  final StreamController<Tuple2<Uri, StreamedResponse>> _onPush =
-      StreamController();
-
-  final List<Interceptor> interceptors;
-  final Map defaultHeaders;
-  final Authenticator authenticator;
-  final bool debug;
-
-  OkHttpClient(
-      {BaseClient http1Client,
-      this.autoUncompress = true,
-      this.maintainOpenConnections = true,
-      this.maxOpenConnections = -1,
-      this.onBadCertificate,
-      this.context,
-      this.timeout,
-      this.defaultHeaders = const {},
-      this.authenticator,
-      this.debug = false})
-      : http1Client = http1Client ?? IOClient(),
-        interceptors = [] {
-    assert(maxOpenConnections == -1 || maxOpenConnections > 0,
-        'maxOpenConnections must be -1, or > 0.');
+  List<Interceptor> get interceptors {
+    return _interceptors;
   }
 
-  /// Fires whenever the server pushes content to the client that
-  /// was not explicitly requested.
-  Stream<Tuple2<Uri, StreamedResponse>> get onPush => _onPush.stream;
-
-  @override
-  Future<StreamedResponse> send(BaseRequest request) {
-    if (defaultHeaders != null && defaultHeaders.isNotEmpty) {
-      defaultHeaders.forEach((key, value) {
-        //request.headers.putIfAbsent(key, () => value);
-      });
-    }
-    return _send(request, []);
+  List<Interceptor> get networkInterceptor {
+    return _networkInterceptors;
   }
 
-  Future<SecureSocket> connect(Request request) async {
-    try {
-      var secureSocket = await SecureSocket.connect(
-          request.url.host, request.url.port,
-          supportedProtocols: ['h2'],
-          onBadCertificate: onBadCertificate,
-          context: context,
-          timeout: timeout);
-      if (secureSocket.selectedProtocol != 'h2') {
-        log.info('Failed to negogiate http/2 via alpn. Maybe server '
-            "doesn't support http/2.");
-      }
-      return secureSocket;
-    } catch (e) {
-      log.warning('http/2 connect error');
-      return null;
-    }
+  SecurityContext get securityContext {
+    return _securityContext;
   }
 
-  Future<StreamedResponse> _send(
-      BaseRequest request, List<RedirectInfo> redirects) async {
-    if (request.url.scheme != 'https') {
-      log.fine('use ssl : false');
-      return http1Client.send(request);
-    } else {
-      ClientTransportConnection connection;
-
-      if (maintainOpenConnections && _sockets.containsKey(request.url.host)) {
-        // If this transport is closed, form a new connection.
-        log.fine('If this transport is closed, form a new connection.');
-        connection = _sockets[request.url.host];
-        if (!connection.isOpen) {
-          connection = null;
-          _sockets.remove(request.url.host);
-        }
-      }
-
-      if (connection == null) {
-        log.fine('connection is null');
-        var socket = await connect(request);
-        if (socket == null) {
-          return http1Client.send(request);
-        } else {
-          // Close any connections that have overstayed their welcome.
-          if (maxOpenConnections > -1) {
-            while (_sockets.length >= maxOpenConnections) {
-              var transport = _sockets.remove(_sockets.keys.first);
-              await transport.finish();
-            }
-          }
-
-          var transport = ClientTransportConnection.viaSocket(socket);
-
-          if (maintainOpenConnections) {
-            _sockets[request.url.host] = transport;
-
-            // If the socket closes before another use, remove it from
-            // memory.
-            // transport.
-          }
-
-          connection = transport;
-        }
-      }
-
-      var transport = connection;
-      if (transport == null) {
-        // Use HTTP/1.1 instead.
-        return await http1Client.send(request);
-      }
-
-      var headers = [
-        Header.ascii(':authority', request.url.authority),
-        Header.ascii(':method', request.method),
-        Header.ascii(
-          ':path',
-          Uri(
-            fragment: !request.url.hasFragment ? null : request.url.fragment,
-            query: !request.url.hasQuery ? null : request.url.query,
-            path: request.url.path,
-          ).toString(),
-        ),
-        Header.ascii(':scheme', request.url.scheme),
-      ];
-
-      request.headers.forEach((k, v) {
-        headers.add(Header.ascii(k.toLowerCase(), v));
-      });
-
-      var stream = transport.makeRequest(headers, endStream: false);
-
-      stream.peerPushes.listen((push) {
-        _fromStream(request, push.stream, redirects, push.requestHeaders)
-            .then(_onPush.add);
-      });
-
-      await request
-          .finalize()
-          .forEach(stream.sendData)
-          .then((_) => stream.outgoingMessages.close());
-
-      var t = await _fromStream(request, stream, redirects);
-      var response = t.item2;
-      if (maintainOpenConnections) response;
-      return transport.finish().then((_) => response);
-    }
+  Proxy get proxy {
+    return _proxy;
   }
 
-  /// Taken from `dart:_http`. Finds the HTTP reason phrase for a given [statusCode].
-  static String findReasonPhrase(int statusCode) {
-    switch (statusCode) {
-      case HttpStatus.continue_:
-        return 'Continue';
-      case HttpStatus.switchingProtocols:
-        return 'Switching Protocols';
-      case HttpStatus.ok:
-        return 'OK';
-      case HttpStatus.created:
-        return 'Created';
-      case HttpStatus.accepted:
-        return 'Accepted';
-      case HttpStatus.nonAuthoritativeInformation:
-        return 'Non-Authoritative Information';
-      case HttpStatus.noContent:
-        return 'No Content';
-      case HttpStatus.resetContent:
-        return 'Reset Content';
-      case HttpStatus.partialContent:
-        return 'Partial Content';
-      case HttpStatus.multipleChoices:
-        return 'Multiple Choices';
-      case HttpStatus.movedPermanently:
-        return 'Moved Permanently';
-      case HttpStatus.found:
-        return 'Found';
-      case HttpStatus.seeOther:
-        return 'See Other';
-      case HttpStatus.notModified:
-        return 'Not Modified';
-      case HttpStatus.useProxy:
-        return 'Use Proxy';
-      case HttpStatus.temporaryRedirect:
-        return 'Temporary Redirect';
-      case HttpStatus.badRequest:
-        return 'Bad Request';
-      case HttpStatus.unauthorized:
-        return 'Unauthorized';
-      case HttpStatus.paymentRequired:
-        return 'Payment Required';
-      case HttpStatus.forbidden:
-        return 'Forbidden';
-      case HttpStatus.notFound:
-        return 'Not Found';
-      case HttpStatus.methodNotAllowed:
-        return 'Method Not Allowed';
-      case HttpStatus.notAcceptable:
-        return 'Not Acceptable';
-      case HttpStatus.proxyAuthenticationRequired:
-        return 'Proxy Authentication Required';
-      case HttpStatus.requestTimeout:
-        return 'Request Time-out';
-      case HttpStatus.conflict:
-        return 'Conflict';
-      case HttpStatus.gone:
-        return 'Gone';
-      case HttpStatus.lengthRequired:
-        return 'Length Required';
-      case HttpStatus.preconditionFailed:
-        return 'Precondition Failed';
-      case HttpStatus.requestEntityTooLarge:
-        return 'Request Entity Too Large';
-      case HttpStatus.requestUriTooLong:
-        return 'Request-URI Too Long';
-      case HttpStatus.unsupportedMediaType:
-        return 'Unsupported Media Type';
-      case HttpStatus.requestedRangeNotSatisfiable:
-        return 'Requested range not satisfiable';
-      case HttpStatus.expectationFailed:
-        return 'Expectation Failed';
-      case HttpStatus.internalServerError:
-        return 'Internal Server Error';
-      case HttpStatus.notImplemented:
-        return 'Not Implemented';
-      case HttpStatus.badGateway:
-        return 'Bad Gateway';
-      case HttpStatus.serviceUnavailable:
-        return 'Service Unavailable';
-      case HttpStatus.gatewayTimeout:
-        return 'Gateway Time-out';
-      case HttpStatus.httpVersionNotSupported:
-        return 'Http Version not supported';
-      default:
-        return 'Status $statusCode';
-    }
+  ProxySelector get proxySelector {
+    return _proxySelector;
   }
 
-  @override
-  void close() {
-    super.close();
-    http1Client.close();
-    _onPush.close();
-    _sockets.values.forEach((c) => c.finish());
+  CookieJar get cookieJar {
+    return _cookieJar;
   }
 
-  Future<Tuple2<Uri, StreamedResponse>> _fromStream(BaseRequest request,
-      ClientTransportStream stream, List<RedirectInfo> redirects,
-      [List<Header> requestHeaders = const []]) {
-    var url = request.url;
-    var headers = CaseInsensitiveMap<String>();
+  Cache get cache {
+    return _cache;
+  }
 
-    void applyHeader(Header h) {
-      var name = utf8.decode(h.name), value = utf8.decode(h.value);
-      headers[name] = value;
-    }
+  bool get followRedirects {
+    return _followRedirects;
+  }
 
-    var c = Completer<Tuple2<Uri, StreamedResponse>>();
-    var body = StreamController<List<int>>();
-    requestHeaders.forEach(applyHeader);
+  int get maxRedirects {
+    return _maxRedirects;
+  }
 
-    void complete() {
-      var statusCode = int.tryParse(headers.remove(':status').toString());
+  Duration get idleTimeout {
+    return _idleTimeout;
+  }
 
-      if (statusCode == null) {
-        if (!c.isCompleted) {
-          c.completeError(
-              StateError('Server $url did not send a response status code.'));
-        }
-      }
+  Duration get connectionTimeout {
+    return _connectionTimeout;
+  }
 
-      if (!c.isCompleted) {
-        if (request.followRedirects && headers.containsKey('location')) {
-          var location = request.url.resolve(headers['location']);
-          if (redirects.length >= request.maxRedirects) {
-            if (!c.isCompleted) {
-              c.completeError(RedirectException(
-                  'max redirect count of ${request.maxRedirects} exceeded',
-                  redirects));
-            }
-          }
+  Call newCall(Request request) {
+    return RealCall.newRealCall(this, request);
+  }
 
-          // Follow the redirect...
-          var newRedirects = List<RedirectInfo>.from(redirects)
-            ..add(_RedirectInfo(request.method, statusCode, location));
-          var rq = Request(statusCode == 307 ? request.method : 'GET', location)
-            ..followRedirects = request.followRedirects
-            ..headers.addAll(request.headers)
-            ..maxRedirects = request.maxRedirects;
-
-          if (request is Request) {
-            rq.encoding = request.encoding;
-            if (statusCode == 307) {
-              rq.bodyBytes = request.bodyBytes;
-            }
-          }
-
-          if (request.contentLength != null) {
-            rq.headers['content-length'] = request.contentLength.toString();
-          }
-
-          if (!c.isCompleted) {
-            c.complete(
-                _send(rq, newRedirects).then((r) => Tuple2(location, r)));
-          }
-        } else {
-          var stream = body.stream;
-
-          if (autoUncompress && headers['content-encoding'] == 'gzip') {
-            stream = stream.transform(gzip.decoder);
-          } else if (autoUncompress &&
-              headers['content-encoding'] == 'deflate') {
-            stream = stream.transform(zlib.decoder);
-          }
-
-          c.complete(Tuple2(
-            url,
-            StreamedResponse(
-              stream,
-              statusCode,
-              contentLength: int.tryParse(headers['content-length'].toString()),
-              headers: headers,
-              request: request,
-              reasonPhrase: findReasonPhrase(statusCode),
-              isRedirect: headers.containsKey('location'),
-            ),
-          ));
-        }
-      }
-    }
-
-    stream.incomingMessages.listen(
-      (message) {
-        if (message is HeadersStreamMessage) {
-          message.headers.forEach(applyHeader);
-        } else if (message is DataStreamMessage) {
-          body.add(message.bytes);
-        } else {
-          if (!c.isCompleted) {
-            c.completeError(ArgumentError.value(message, 'message',
-                'must be HeadersStreamMessage or DataStreamMessage'));
-          }
-        }
-      },
-      cancelOnError: true,
-      onDone: () {
-        complete();
-        body.close();
-      },
-      onError: (e, StackTrace st) {
-        if (!c.isCompleted) c.completeError(e, st);
-      },
-    );
-
-    return c.future;
+  OkHttpClientBuilder newBuilder() {
+    return OkHttpClientBuilder._(this);
   }
 }
 
-class _RedirectInfo implements RedirectInfo {
-  @override
-  final String method;
-  @override
-  final int statusCode;
-  @override
-  final Uri location;
+class OkHttpClientBuilder {
+  OkHttpClientBuilder();
 
-  _RedirectInfo(this.method, this.statusCode, this.location);
+  OkHttpClientBuilder._(OkHttpClient client)
+      : _securityContext = client.securityContext(),
+        _proxy = client.proxy(),
+        _proxySelector = client.proxySelector(),
+        _cookieJar = client.cookieJar(),
+        _cache = client.cache(),
+        _followRedirects = client.followRedirects(),
+        _maxRedirects = client.maxRedirects(),
+        _idleTimeout = client.idleTimeout(),
+        _connectionTimeout = client.connectionTimeout() {
+    _interceptors.addAll(client.interceptors());
+    _networkInterceptors.addAll(client.networkInterceptors());
+  }
+
+  final List<Interceptor> _interceptors = <Interceptor>[];
+  final List<Interceptor> _networkInterceptors = <Interceptor>[];
+
+  SecurityContext _securityContext;
+  Proxy _proxy;
+  ProxySelector _proxySelector;
+
+  CookieJar _cookieJar = CookieJar.noCookies;
+  Cache _cache;
+
+  bool _followRedirects = true;
+  int _maxRedirects = 5;
+
+  Duration _idleTimeout = Duration(seconds: 15);
+  Duration _connectionTimeout = Duration(seconds: 10);
+
+  OkHttpClientBuilder addInterceptor(Interceptor interceptor) {
+    assert(interceptor != null);
+    _interceptors.add(interceptor);
+    return this;
+  }
+
+  OkHttpClientBuilder addNetworkInterceptor(Interceptor networkInterceptor) {
+    assert(networkInterceptor != null);
+    _networkInterceptors.add(networkInterceptor);
+    return this;
+  }
+
+  OkHttpClientBuilder securityContext(SecurityContext securityContext) {
+    _securityContext = securityContext;
+    return this;
+  }
+
+  OkHttpClientBuilder proxy(Proxy proxy) {
+    _proxy = proxy;
+    return this;
+  }
+
+  OkHttpClientBuilder proxySelector(ProxySelector proxySelector) {
+    _proxySelector = proxySelector;
+    return this;
+  }
+
+  OkHttpClientBuilder cookieJar(CookieJar cookieJar) {
+    _cookieJar = cookieJar;
+    return this;
+  }
+
+  OkHttpClientBuilder cache(Cache cache) {
+    _cache = cache;
+    return this;
+  }
+
+  OkHttpClientBuilder followRedirects(bool value) {
+    assert(value != null);
+    _followRedirects = value;
+    return this;
+  }
+
+  OkHttpClientBuilder maxRedirects(int value) {
+    assert(value != null);
+    _maxRedirects = value;
+    return this;
+  }
+
+  OkHttpClientBuilder idleTimeout(Duration value) {
+    assert(value != null);
+    _idleTimeout = value;
+    return this;
+  }
+
+  OkHttpClientBuilder connectionTimeout(Duration value) {
+    assert(value != null);
+    _connectionTimeout = value;
+    return this;
+  }
+
+  OkHttpClient build() {
+    return OkHttpClient._(
+      List<Interceptor>.unmodifiable(_interceptors),
+      List<Interceptor>.unmodifiable(_networkInterceptors),
+      _securityContext,
+      _proxy,
+      _proxySelector,
+      _cookieJar,
+      _cache,
+      _followRedirects,
+      _maxRedirects,
+      _idleTimeout,
+      _connectionTimeout,
+    );
+  }
 }

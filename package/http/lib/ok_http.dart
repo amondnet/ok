@@ -1,4 +1,4 @@
 library okhttp;
 
-export 'src/ok_http_client.dart';
-export 'src/media_type.dart';
+export 'src/http2_client.dart';
+export 'src/media_types.dart';

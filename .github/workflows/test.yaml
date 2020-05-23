@@ -27,6 +27,7 @@ jobs:
       - name: Run tests
         working-directory: package/${{ matrix.package }}
         run: |
+          pub run build_runner build
           pub run test
           pub run test_coverage --badge false
       - name: Upload coverage to codecov

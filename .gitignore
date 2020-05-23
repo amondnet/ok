@@ -11,3 +11,4 @@ build/
 doc/api/
 
  test/.test_coverage.dart
+/**/test/.test_coverage.dart

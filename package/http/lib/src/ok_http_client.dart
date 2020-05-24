@@ -2,9 +2,8 @@ import 'dart:io';
 
 import 'cache.dart';
 import 'call.dart';
-import 'cookie_jar.dart';
 import 'interceptor.dart';
-import 'internal/cookie_jar.dart';
+import 'cookie_jar.dart';
 import 'proxy.dart';
 import 'request.dart';
 
@@ -53,7 +52,7 @@ class OkHttpClient {
     return _interceptors;
   }
 
-  List<Interceptor> get networkInterceptor {
+  List<Interceptor> get networkInterceptors {
     return _networkInterceptors;
   }
 

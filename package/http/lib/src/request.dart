@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:ok_http/src/request_body.dart';
+import 'package:okhttp/src/request_body.dart';
 import 'package:quiver/check.dart';
 import 'package:quiver/collection.dart';
 import 'package:quiver/strings.dart';

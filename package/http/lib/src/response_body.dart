@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:http_parser/http_parser.dart';
-import 'package:ok_http/src/internal/encoder.dart';
+import 'package:okhttp/src/internal/encoder.dart';
 
 import 'internal/buffer.dart';
 import 'media_types.dart';

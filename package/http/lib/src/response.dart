@@ -3,8 +3,8 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'package:quiver/check.dart';
 import 'package:http/http.dart' as http;
-import 'package:ok_http/src/internal/buffer.dart';
-import 'package:ok_http/src/protocol.dart';
+import 'package:okhttp/src/internal/buffer.dart';
+import 'package:okhttp/src/protocol.dart';
 
 import 'cache_control.dart';
 import 'headers.dart';

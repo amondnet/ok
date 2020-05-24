@@ -3,13 +3,13 @@ import 'dart:io';
 
 import 'package:convert/convert.dart';
 import 'package:http_parser/http_parser.dart';
-import 'package:ok_http/src/cache_control.dart';
-import 'package:ok_http/src/internal/buffer.dart';
-import 'package:ok_http/src/request.dart';
-import 'package:ok_http/src/request_body.dart';
-import 'package:ok_http/ok_http.dart';
+import 'package:okhttp/src/cache_control.dart';
+import 'package:okhttp/src/internal/buffer.dart';
+import 'package:okhttp/src/request.dart';
+import 'package:okhttp/src/request_body.dart';
+import 'package:okhttp/okhttp.dart';
 
-import 'package:ok_http/src/response_body.dart';
+import 'package:okhttp/src/response_body.dart';
 import 'package:test/test.dart';
 
 void main() {

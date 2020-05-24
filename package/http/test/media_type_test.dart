@@ -1,4 +1,4 @@
-import 'package:ok_http/ok_http.dart';
+import 'package:okhttp/okhttp.dart';
 import 'package:test/test.dart';
 
 void main() {

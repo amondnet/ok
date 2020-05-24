@@ -1,10 +1,10 @@
 import 'dart:convert';
 
-import 'package:ok_http/ok_http.dart';
-import 'package:ok_http/src/protocol.dart';
-import 'package:ok_http/src/request.dart';
-import 'package:ok_http/src/response.dart';
-import 'package:ok_http/src/response_body.dart';
+import 'package:okhttp/okhttp.dart';
+import 'package:okhttp/src/protocol.dart';
+import 'package:okhttp/src/request.dart';
+import 'package:okhttp/src/response.dart';
+import 'package:okhttp/src/response_body.dart';
 import 'package:test/test.dart';
 
 void main() {

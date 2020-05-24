@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:logging/logging.dart';
-import 'package:ok_http/ok_http.dart';
+import 'package:okhttp/okhttp.dart';
 
 void main() async {
   var client = Http2Client(maxOpenConnections: 1);

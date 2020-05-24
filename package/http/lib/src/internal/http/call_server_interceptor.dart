@@ -3,8 +3,8 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
-import 'package:ok_http/ok_http.dart';
-import 'package:ok_http/src/internal/http_method.dart';
+import 'package:okhttp/okhttp.dart';
+import 'package:okhttp/src/internal/http_method.dart';
 
 import '../../interceptor.dart';
 import '../../ok_http_client.dart';

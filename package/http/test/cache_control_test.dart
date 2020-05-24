@@ -2,8 +2,8 @@ import 'dart:collection';
 
 import 'package:fixnum/fixnum.dart';
 import 'package:logging/logging.dart';
-import 'package:ok_http/src/cache_control.dart';
-import 'package:ok_http/src/headers.dart';
+import 'package:okhttp/src/cache_control.dart';
+import 'package:okhttp/src/headers.dart';
 import 'package:test/test.dart';
 
 void main() {

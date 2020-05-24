@@ -14,8 +14,17 @@ extension StringExtenstions on String {
     }
     return length;
   }
+
+  /// Increments [startIndex] until this string is not ASCII whitespace. Stops at [endIndex].
+  int indexOfFirstNonAsciiWhitespace([int startIndex = 0, int endIndex]) {
+    endIndex ??= length;
+    var index = indexOf(RegExp(r'[\t\n\u000c\r\s]'));
+    if (index == -1) return endIndex;
+    return index;
+  }
 }
 
+/*
 Future<List<int>> readAsBytes(Stream<List<int>> source) {
   var completer = Completer<List<int>>();
   var sink = ByteConversionSink.withCallback((List<int> accumulated) {
@@ -29,3 +38,4 @@ Future<List<int>> readAsBytes(Stream<List<int>> source) {
   );
   return completer.future;
 }
+*/

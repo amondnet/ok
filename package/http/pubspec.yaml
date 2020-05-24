@@ -1,6 +1,6 @@
-name: ok_http
+name: okhttp
 description: A starting point for Dart libraries or applications.
-version: 0.0.1
+version: 0.0.1-dev.1
 homepage: https://github.com/amondnet/ok
 
 environment:
@@ -14,7 +14,8 @@ dependencies:
   logging: ^0.11.4
   fixnum: ^0.10.11
   quiver: ^2.0.0
-  freezed_annotation:
+  freezed_annotation: ^0.7.1
+  convert: ^2.0.0
 
 dev_dependencies:
   pedantic: ^1.9.0

@@ -1,0 +1,47 @@
+name: ok_http2
+
+on: [push, pull_request]
+
+jobs:
+  build_dart_packages:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ["http2"]
+        version: ["latest", "dev"]
+
+    container:
+      image: google/dart:${{ matrix.version }}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install dependencies
+        working-directory: package/${{ matrix.package }}
+        run: |
+          pub get
+          pub global activate test_coverage
+          pub global activate remove_from_coverage
+
+      #- name: Analyze
+      #  working-directory: package/${{ matrix.package }}
+      #  run: dartanalyzer --fatal-infos --fatal-warnings .
+
+      - name: Run tests
+        working-directory: package/${{ matrix.package }}
+        run: |
+          true || pub run build_runner build
+          pub run test
+          test_coverage --badge false
+          remove_from_coverage -f coverage/lcov.info -r '.freezed.dart$'
+      - name: Gen Coverage Badge
+        working-directory: package/${{ matrix.package }}
+        run: dart ../../tool/badge.dart
+
+      - name: Upload coverage to codecov
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: ${{ matrix.package }}
+          file: ./package/${{ matrix.package }}/coverage/lcov.info

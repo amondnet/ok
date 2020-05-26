@@ -1,4 +1,4 @@
-name: Build
+name: okhttp
 
 on: [push, pull_request]
 
@@ -8,7 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: ["http", "http2"]
+        package: ["http"]
         version: ["latest", "dev"]
 
     container:

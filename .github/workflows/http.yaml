@@ -35,9 +35,6 @@ jobs:
           pub run test
           pub global run test_coverage --badge false
           pub global run remove_from_coverage -f coverage/lcov.info -r '.freezed.dart$'
-      - name: Gen Coverage Badge
-        working-directory: package/${{ matrix.package }}
-        run: dart ../../tool/badge.dart
 
       - name: Upload coverage to codecov
         uses: codecov/codecov-action@v1

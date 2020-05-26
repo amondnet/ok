@@ -33,9 +33,6 @@ jobs:
         run: |
           pub run test
           pub global run test_coverage --badge false
-      - name: Gen Coverage Badge
-        working-directory: package/${{ matrix.package }}
-        run: dart ../../tool/badge.dart
 
       - name: Upload coverage to codecov
         uses: codecov/codecov-action@v1

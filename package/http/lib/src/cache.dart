@@ -1,3 +1,8 @@
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:convert/convert.dart';
+
 import 'headers.dart';
 import 'internal/cache/cache_strategy.dart';
 import 'internal/http_method.dart';
@@ -5,10 +10,10 @@ import 'request.dart';
 import 'response.dart';
 
 class Cache {
-  Cache(
-    RawCache cache, [
+  Cache(RawCache cache, [
     KeyExtractor keyExtractor,
-  ])  : assert(cache != null),
+  ])
+      : assert(cache != null),
         _cache = cache,
         _keyExtractor = keyExtractor ?? _defaultKeyExtractor;
 
@@ -172,9 +177,9 @@ class CacheRequest {
   EventSink<List<int>> body() {
     EventSink<List<int>> bodySink;
     StreamController<List<int>> streamController =
-        StreamController<List<int>>();
+    StreamController<List<int>>();
     streamController.stream.listen(
-      (List<int> event) {
+          (List<int> event) {
         // add
         if (bodySink == null) {
           bodySink = editor.newSink(Cache.entryBody, utf8);
@@ -189,7 +194,7 @@ class CacheRequest {
       onDone: () {
         // close
         EventSink<List<int>> metaDataSink =
-            editor.newSink(Cache.entryMetaData, utf8);
+        editor.newSink(Cache.entryMetaData, utf8);
         metaDataSink.add(metaData);
         editor.commit();
       },
@@ -219,18 +224,19 @@ abstract class RawCache {
   Future<bool> remove(String key);
 }
 
-typedef String KeyExtractor(HttpUrl url);
+typedef String KeyExtractor(Uri url);
 
-String _defaultKeyExtractor(HttpUrl url) =>
-    hex.encode(md5.convert(utf8.encode(url.toString())).bytes);
+String _defaultKeyExtractor(Uri url) =>
+    hex.encode(md5
+        .convert(utf8.encode(url.toString()))
+        .bytes);
 
 class Snapshot {
-  Snapshot(
-    String key,
-    int sequenceNumber,
-    List<Stream<List<int>>> sources,
-    List<int> lengths,
-  )   : _key = key,
+  Snapshot(String key,
+      int sequenceNumber,
+      List<Stream<List<int>>> sources,
+      List<int> lengths,)
+      : _key = key,
         _sequenceNumber = sequenceNumber,
         _sources = sources,
         _lengths = lengths;
@@ -307,23 +313,14 @@ class Snapshot {
 /// each on their own line. A length of -1 is used to encode a null array. The last line is
 /// optional. If present, it contains the TLS version.
 class _Entry {
-  _Entry(
-    String url,
-    String requestMethod,
-    Headers varyHeaders,
-    int code,
-    String message,
-    Headers responseHeaders,
-    int sentRequestMillis,
-    int receivedResponseMillis,
-  )   : _url = url,
-        _requestMethod = requestMethod,
-        _varyHeaders = varyHeaders,
-        _code = code,
-        _message = message,
-        _responseHeaders = responseHeaders,
-        _sentRequestMillis = sentRequestMillis,
-        _receivedResponseMillis = receivedResponseMillis;
+  _Entry(this._url,
+      this._requestMethod,
+      this._varyHeaders,
+      this._code,
+      this._message,
+      this._responseHeaders,
+      this._sentRequestMillis,
+      this._receivedResponseMillis,);
 
   static const String _sentMillis = 'OkHttp-Sent-Millis';
   static const String _receivedMillis = 'OkHttp-Received-Millis';
@@ -336,18 +333,30 @@ class _Entry {
   final Headers _responseHeaders;
   final int _sentRequestMillis;
   final int _receivedResponseMillis;
+  Handshake handshake;
 
   factory _Entry.fromResponse(Response response) {
-    _url = response.request.url.toString()
-    _varyHeaders = response.varyHeaders()
-    _requestMethod = response.request.method
-    _protocol = response.protocol
-    _code = response.code
-    _message = response.message
-    _responseHeaders = response.headers
-    _handshake = response.handshake
-    _sentRequestMillis = response.sentRequestAtMillis
-    _receivedResponseMillis = response.receivedResponseAtMillis
+    return _Entry(
+        response.request.url.toString()
+        ,
+        response.varyHeaders
+        ,
+        response.request.method
+        ,
+        response.protocol
+        ,
+        response.code
+        ,
+        response.message
+        ,
+        response.headers
+        ,
+        response.handshake
+        ,
+        response.sentRequestAtMillis
+        ,
+        response.receivedResponseAtMillis
+    )
   }
 
   List<int> metaData() {
@@ -375,11 +384,11 @@ class _Entry {
 
   Response response(Snapshot snapshot) {
     String contentTypeString =
-        _responseHeaders.value(HttpHeaders.contentTypeHeader);
+    _responseHeaders.value(HttpHeaders.contentTypeHeader);
     MediaType contentType =
-        contentTypeString != null ? MediaType.parse(contentTypeString) : null;
+    contentTypeString != null ? MediaType.parse(contentTypeString) : null;
     String contentLengthString =
-        _responseHeaders.value(HttpHeaders.contentLengthHeader);
+    _responseHeaders.value(HttpHeaders.contentLengthHeader);
     int contentLength = contentLengthString != null
         ? (int.tryParse(contentLengthString) ?? -1)
         : -1;
@@ -436,7 +445,7 @@ class _Entry {
 
     String sendRequestMillisString = responseHeaders.value(_sentMillis);
     String receivedResponseMillisString =
-        responseHeaders.value(_receivedMillis);
+    responseHeaders.value(_receivedMillis);
 
     responseHeaders = responseHeaders
         .newBuilder()
@@ -447,8 +456,15 @@ class _Entry {
     int sentRequestMillis = int.tryParse(sendRequestMillisString);
     int receivedResponseMillis = int.tryParse(receivedResponseMillisString);
 
-    return Entry(url, requestMethod, varyHeaders, code, message,
-        responseHeaders, sentRequestMillis, receivedResponseMillis);
+    return Entry(
+        url,
+        requestMethod,
+        varyHeaders,
+        code,
+        message,
+        responseHeaders,
+        sentRequestMillis,
+        receivedResponseMillis);
   }
 
   static Entry responseEntry(Response response) {
@@ -460,17 +476,23 @@ class _Entry {
     Headers responseHeaders = response.headers();
     int sentRequestMillis = response.sentRequestAtMillis();
     int receivedResponseMillis = response.receivedResponseAtMillis();
-    return Entry(url, requestMethod, varyHeaders, code, message,
-        responseHeaders, sentRequestMillis, receivedResponseMillis);
+    return Entry(
+        url,
+        requestMethod,
+        varyHeaders,
+        code,
+        message,
+        responseHeaders,
+        sentRequestMillis,
+        receivedResponseMillis);
   }
 }
 
 class _CacheResponseBody extends ResponseBody {
-  _CacheResponseBody(
-    MediaType contentType,
-    int contentLength,
-    Snapshot snapshot,
-  )   : _contentType = contentType,
+  _CacheResponseBody(MediaType contentType,
+      int contentLength,
+      Snapshot snapshot,)
+      : _contentType = contentType,
         _contentLength = contentLength,
         _snapshot = snapshot;
 

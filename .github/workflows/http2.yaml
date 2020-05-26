@@ -42,7 +42,7 @@ jobs:
           push-branch: 'master'
           commit-message: 'publish'
           #force-add: 'true'
-          files: coverage_badge.svg
+          files: package/http2/coverage_badge.svg
           name: GitHub Action
           email: action@github.com
           rebase: 'true' # pull abd rebase before commit

@@ -1,3 +1,6 @@
+# 1.0.0+1
+* fix hompage
+
 # 1.0.0 
 * Forked
 * fix: http/1 fallback

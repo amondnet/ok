@@ -1,7 +1,7 @@
 name: ok_http2
-version: 1.0.0
+version: 1.0.0+1
 description: A package:http BaseClient that speaks HTTP/2, and can maintain connections.
-homepage: https://github.com/amondnet/ok/package/http2_client
+homepage: https://github.com/amondnet/ok/tree/master/package/http2
 environment:
   sdk: ">=2.0.0 <3.0.0"
 dependencies:

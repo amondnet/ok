@@ -114,6 +114,7 @@ class MockServer {
   Certificate _certificate;
   InternetAddressType _addressType;
   int _requestCount = 0;
+  Completer<bool> _started = Completer();
 
   /// Creates an instance of a `MockServer`. If a [port] is defined, it
   /// will be used when `start` is called. Otherwise, or if [:0:]
@@ -140,6 +141,8 @@ class MockServer {
     }
     _addressType = addressType;
   }
+
+  bool get isStarted => _started.isCompleted;
 
   /// Starts the server. If a `port` was passed when the instance was created,
   /// it will try to bind to that `port`, otherwise it will pick any available
@@ -195,7 +198,7 @@ class MockServer {
   }
 
   /// Stop the `MockServer`
-  Future<void> shutdown() {
+  Future<void> shutdown() async {
     return _server.close();
   }
 
@@ -213,6 +216,8 @@ class MockServer {
       }
 
       if (_responses.isEmpty && defaultResponse == null) {
+        await Future.delayed(Duration(milliseconds: 100));
+        continue;
         throw Exception('No responses in queue and no default response');
       }
 

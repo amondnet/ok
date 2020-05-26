@@ -6,6 +6,9 @@
       <excludeFolder url="file://$MODULE_DIR$/.dart_tool" />
       <excludeFolder url="file://$MODULE_DIR$/.pub" />
       <excludeFolder url="file://$MODULE_DIR$/build" />
+      <excludeFolder url="file://$MODULE_DIR$/package/http2/.dart_tool" />
+      <excludeFolder url="file://$MODULE_DIR$/package/http2/.pub" />
+      <excludeFolder url="file://$MODULE_DIR$/package/http2/build" />
       <excludeFolder url="file://$MODULE_DIR$/package/okio/.dart_tool" />
       <excludeFolder url="file://$MODULE_DIR$/package/okio/.pub" />
       <excludeFolder url="file://$MODULE_DIR$/package/okio/build" />

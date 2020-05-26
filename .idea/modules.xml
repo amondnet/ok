@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/package/http2/http2.iml" filepath="$PROJECT_DIR$/package/http2/http2.iml" />
       <module fileurl="file://$PROJECT_DIR$/ok.iml" filepath="$PROJECT_DIR$/ok.iml" />
       <module fileurl="file://$PROJECT_DIR$/package/http/okhttp.iml" filepath="$PROJECT_DIR$/package/http/okhttp.iml" />
     </modules>

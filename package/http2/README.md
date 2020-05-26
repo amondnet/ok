@@ -31,7 +31,7 @@ Also see `example/main.dart`.
 import 'dart:io';
 import 'package:cli_repl/cli_repl.dart';
 import 'package:http/http.dart';
-import 'package:http2_client/http2_client.dart';
+import 'package:ok_http2/ok_http2.dart';
 
 main() async {
   var client = Http2Client(maxOpenConnections: Platform.numberOfProcessors);

@@ -105,17 +105,17 @@ class OkHttpClientBuilder {
   OkHttpClientBuilder();
 
   OkHttpClientBuilder._(OkHttpClient client)
-      : _securityContext = client.securityContext(),
-        _proxy = client.proxy(),
-        _proxySelector = client.proxySelector(),
-        _cookieJar = client.cookieJar(),
-        _cache = client.cache(),
-        _followRedirects = client.followRedirects(),
-        _maxRedirects = client.maxRedirects(),
-        _idleTimeout = client.idleTimeout(),
-        _connectionTimeout = client.connectionTimeout() {
-    _interceptors.addAll(client.interceptors());
-    _networkInterceptors.addAll(client.networkInterceptors());
+      : _securityContext = client.securityContext,
+        _proxy = client.proxy,
+        _proxySelector = client.proxySelector,
+        _cookieJar = client.cookieJar,
+        _cache = client.cache,
+        _followRedirects = client.followRedirects,
+        _maxRedirects = client.maxRedirects,
+        _idleTimeout = client.idleTimeout,
+        _connectionTimeout = client.connectionTimeout {
+    _interceptors.addAll(client.interceptors);
+    _networkInterceptors.addAll(client.networkInterceptors);
   }
 
   final List<Interceptor> _interceptors = <Interceptor>[];

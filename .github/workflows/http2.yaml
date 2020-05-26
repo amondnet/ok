@@ -34,6 +34,19 @@ jobs:
           pub run test
           pub global run test_coverage --badge false
 
+      - name: push
+        uses: github-actions-x/commit@v2.6
+        if: ${{ matrix.version == 'latest' }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          push-branch: 'master'
+          commit-message: 'publish'
+          force-add: 'true'
+          files: a.txt b.txt c.txt dirA/ dirB/ dirC/a.txt
+          name: GitHub Action
+          email: action@github.com
+          rebase: 'true' # pull abd rebase before commit
+
       - name: Upload coverage to codecov
         uses: codecov/codecov-action@v1
         if: ${{ matrix.version == 'latest' }}

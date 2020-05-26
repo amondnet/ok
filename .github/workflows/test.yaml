@@ -6,6 +6,7 @@ jobs:
   build_dart_packages:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         package: ["http", "http2"]
         version: ["latest", "dev"]

@@ -1,0 +1,12 @@
+name: ok_mock_server
+version: 1.0.0+1
+description: A flexible Dart web server that can be used to script tests and web server interactions
+homepage: https://github.com/amondnet/ok/tree/master/package/mock_web_server
+environment:
+  sdk: ">=2.0.0 <3.0.0"
+  pedantic: ^1.9.0
+
+# dependencies:
+dev_dependencies:
+  test: '>=1.5.1 <2.0.0'
+  resource: '>=2.1.5 <3.0.0'

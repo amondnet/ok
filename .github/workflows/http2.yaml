@@ -31,10 +31,8 @@ jobs:
       - name: Run tests
         working-directory: package/${{ matrix.package }}
         run: |
-          true || pub run build_runner build
           pub run test
-          test_coverage --badge false
-          remove_from_coverage -f coverage/lcov.info -r '.freezed.dart$'
+          pub global run test_coverage --badge false
       - name: Gen Coverage Badge
         working-directory: package/${{ matrix.package }}
         run: dart ../../tool/badge.dart

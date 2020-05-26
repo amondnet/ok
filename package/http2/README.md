@@ -1,5 +1,6 @@
 # ok_http2
 
+![ok_http2](https://github.com/amondnet/ok/workflows/ok_http2/badge.svg)
 [![pub package](https://badgen.net/pub/v/ok_http2)](https://pub.dartlang.org/packages/ok_http2)
 ![coverage](./coverage_badge.svg)
 [![pub license](https://badgen.net/pub/license/ok_http2)](https://pub.dartlang.org/packages/ok_http2)

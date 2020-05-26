@@ -1,7 +1,9 @@
-# http2_client
+# ok_http2
 
-[![pub package](https://img.shields.io/pub/v/http2_client.svg)](https://pub.dartlang.org/packages/http2_client)
-[![Build Status](https://travis-ci.org/thosakwe/http2_client.svg?branch=master)](https://travis-ci.org/thosakwe/http2_client)
+[![pub package](https://badgen.net/pub/v/ok_http2)](https://pub.dartlang.org/packages/ok_http2)
+![coverage](./coverage_badge.svg)
+[![pub license](https://badgen.net/pub/license/ok_http2)](https://pub.dartlang.org/packages/ok_http2)
+[![sdk-version](https://badgen.net/pub/sdk-version/ok_http2)](https://pub.dartlang.org/packages/ok_http2)
 
 A `package:http` `BaseClient` that speaks HTTP/2, and can maintain connections between requests.
 

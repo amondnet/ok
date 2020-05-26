@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        package: ["http"]
+        package: ["http", "http2"]
         version: ["latest", "dev"]
 
     container:
@@ -18,7 +18,10 @@ jobs:
 
       - name: Install dependencies
         working-directory: package/${{ matrix.package }}
-        run: pub get
+        run: |
+          pub get
+          pub global activate test_coverage
+          pub global activate remove_from_coverage
 
       #- name: Analyze
       #  working-directory: package/${{ matrix.package }}
@@ -29,8 +32,8 @@ jobs:
         run: |
           pub run build_runner build
           pub run test
-          pub run test_coverage --badge false
-          pub run remove_from_coverage -f coverage/lcov.info -r '.freezed.dart$'
+          test_coverage --badge false
+          remove_from_coverage -f coverage/lcov.info -r '.freezed.dart$'
 
       - name: Upload coverage to codecov
         uses: codecov/codecov-action@v1

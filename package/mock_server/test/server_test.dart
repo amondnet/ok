@@ -25,9 +25,11 @@ import 'package:test/test.dart';
 MockServer _server;
 
 void main() {
-  setUp(() {
+  setUp(() async {
     _server = MockServer();
-    _server.start();
+    await _server.start();
+    var client = HttpClient();
+    var request = await client.get(_server.host, _server.port, '');
   });
 
   tearDown(() async {
